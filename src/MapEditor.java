@@ -403,7 +403,7 @@ public class MapEditor {
         // Collision view toggle
         p.fill(showCollisions ? 100 : 50);
         p.rect(p.width - editorPanelWidth + 20, toggleY + 40, 150, 30);
-        p.fill(255);
+        p.fill(2);
         p.text("Show Collisions (C)", p.width - editorPanelWidth + 95, toggleY + 55);
 
         // Save button
@@ -422,7 +422,6 @@ public class MapEditor {
         }
         return false;
     }
-
     // Getters and setters (remain unchanged)
     public boolean isEditingForeground() {
         return editingForeground;
