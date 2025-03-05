@@ -78,16 +78,16 @@ public class MapEditor {
     public void handleEditorScroll() {
         // Scroll with arrow keys and IJKL alternative keys
         if (p.keyPressed) {
-            if (p.keyCode == PApplet.UP || p.key == 'i' || p.key == 'I') {
+            if (p.keyCode == PApplet.UP || p.key == 'w' || p.key == 'W') {
                 editorCameraY -= editorScrollSpeed;
             }
-            if (p.keyCode == PApplet.DOWN || p.key == 'k' || p.key == 'K') {
+            if (p.keyCode == PApplet.DOWN || p.key == 's' || p.key == 'S') {
                 editorCameraY += editorScrollSpeed;
             }
-            if (p.keyCode == PApplet.LEFT || p.key == 'j' || p.key == 'J') {
+            if (p.keyCode == PApplet.LEFT || p.key == 'a' || p.key == 'A') {
                 editorCameraX -= editorScrollSpeed;
             }
-            if (p.keyCode == PApplet.RIGHT || p.key == 'l' || p.key == 'L') {
+            if (p.keyCode == PApplet.RIGHT || p.key == 'd' || p.key == 'D') {
                 editorCameraX += editorScrollSpeed;
             }
         }
@@ -265,13 +265,6 @@ public class MapEditor {
                 p.mouseY >= toggleY + 80 && p.mouseY <= toggleY + 110) {
             saveMapToJSON("map.json");
         }
-
-        // Test game button (placeholder for future implementation)
-        if (p.mouseX >= p.width - editorPanelWidth + 20 && p.mouseX <= p.width - editorPanelWidth + 170 &&
-                p.mouseY >= toggleY + 120 && p.mouseY <= toggleY + 150) {
-            // Assuming there's a way to toggle game mode
-            // This might need to be handled in the main Scratch1 class
-        }
     }
 
     // Key pressed method
@@ -318,9 +311,6 @@ public class MapEditor {
         updateGameMap();
         gameMap.saveMapToJSON(filename);
     }
-
-    // Remaining utility methods like drawEditorPanel(), contains(), and getters/setters
-    // would remain the same as in the previous implementation
 
     // Draws the editor panel (implementation remains the same as before)
     public void drawEditorPanel() {
@@ -384,12 +374,12 @@ public class MapEditor {
             p.text(i, x + 2, y + tileDisplaySize - 2);
 
             // If this is a collision tile, mark it
-            if (contains(solidTiles, i)) {
+          /*  if (contains(solidTiles, i)) {
                 p.stroke(255, 0, 0);
                 p.line(x, y, x + tileDisplaySize, y + tileDisplaySize);
                 p.line(x + tileDisplaySize, y, x, y + tileDisplaySize);
                 p.noStroke();
-            }
+            }*/
         }
 
         // Draw controls section
@@ -398,10 +388,10 @@ public class MapEditor {
         p.fill(255);
         p.textAlign(PApplet.CENTER);
         p.textSize(16);
-        p.text("Controls", p.width - editorPanelWidth/2, controlsY);
+        p.text("Controls", p.width - editorPanelWidth/2, controlsY-25);
 
         // Draw toggle buttons
-        int toggleY = controlsY + 30;
+        int toggleY = controlsY;
 
         // Grid toggle
         p.fill(showGrid ? 100 : 50);
@@ -421,42 +411,6 @@ public class MapEditor {
         p.rect(p.width - editorPanelWidth + 20, toggleY + 80, 150, 30);
         p.fill(255);
         p.text("Save Map (S)", p.width - editorPanelWidth + 95, toggleY + 95);
-
-        // Test game button
-        p.fill(60, 60, 180);
-        p.rect(p.width - editorPanelWidth + 20, toggleY + 120, 150, 30);
-        p.fill(255);
-        p.text("Test Game (E)", p.width - editorPanelWidth + 95, toggleY + 135);
-
-        // Selected tile preview
-        p.fill(255);
-        p.textAlign(PApplet.CENTER);
-        p.textSize(16);
-        p.text("Selected Tile", p.width - editorPanelWidth/2, toggleY + 180);
-
-        // Draw large preview of selected tile
-        p.fill(80);
-        p.rect(p.width - editorPanelWidth + 50, toggleY + 200, 100, 100);
-        p.image(images[selectedTile], p.width - editorPanelWidth + 50, toggleY + 200, 100, 100);
-
-        // Display editing info
-        p.fill(255);
-        p.textAlign(PApplet.CENTER);
-        p.textSize(14);
-        p.text("Layer: " + (editingForeground ? "Foreground" : "Background"),
-                p.width - editorPanelWidth/2, toggleY + 320);
-        p.text("Tile ID: " + selectedTile, p.width - editorPanelWidth/2, toggleY + 340);
-
-        // Help text at bottom
-        p.fill(200);
-        p.textSize(12);
-        p.textAlign(PApplet.CENTER);
-        p.text("Click to place tiles. Right-click to erase.",
-                p.width - editorPanelWidth/2, p.height - 60);
-        p.text("Arrow keys to scroll. WASD in game mode.",
-                p.width - editorPanelWidth/2, p.height - 40);
-        p.text("Press F to toggle layer.",
-                p.width - editorPanelWidth/2, p.height - 20);
     }
 
     // Helper function for checking if a value is in an array
