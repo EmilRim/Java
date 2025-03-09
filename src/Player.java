@@ -1,5 +1,6 @@
 import processing.core.PApplet;
 import processing.core.PImage;
+import java.util.ArrayList;
 
 public class Player {
     private PApplet p;
@@ -24,13 +25,13 @@ public class Player {
     private int scaleFactor;
 
     // Collision boxes
-    private int frontBackOffsetX = 50;
-    private int frontBackOffsetY = 50;
+    private int frontBackOffsetX = 40;
+    private int frontBackOffsetY = 30;
     private int frontBackWidth;
     private int frontBackHeight;
 
-    private int sideOffsetX = 30;
-    private int sideOffsetY = 50;
+    private int sideOffsetX = 20;
+    private int sideOffsetY = 30;
     private int sideWidth;
     private int sideHeight;
 
@@ -60,9 +61,9 @@ public class Player {
         sideHeight = tileHeight * scaleFactor - 2 * sideOffsetY;
     }
 
-    public void update(GameMap map, Enemy enemy) {
+    public void update(GameMap map, ArrayList<Enemy> enemies) {
         updateAnimation();
-        updatePosition(map, enemy);
+        updatePosition(map, enemies);
     }
 
     private void updateAnimation() {
@@ -91,7 +92,7 @@ public class Player {
         }
     }
 
-    private void updatePosition(GameMap map, Enemy enemy) {
+    private void updatePosition(GameMap map, ArrayList<Enemy> enemies) {
         float newX = x;
         float newY = y;
 
@@ -101,17 +102,17 @@ public class Player {
         if (movingRight) newX += speed;
 
         // Check and apply horizontal movement if valid
-        if (newX != x && !checkCollision(newX, y, map, enemy)) {
+        if (newX != x && !checkCollision(newX, y, map, enemies)) {
             x = newX;
         }
 
         // Check and apply vertical movement if valid
-        if (newY != y && !checkCollision(x, newY, map, enemy)) {
+        if (newY != y && !checkCollision(x, newY, map, enemies)) {
             y = newY;
         }
     }
 
-    private boolean checkCollision(float testX, float testY, GameMap map, Enemy enemy) {
+    private boolean checkCollision(float testX, float testY, GameMap map, ArrayList<Enemy> enemies) {
         // Select the appropriate collision box based on direction
         float offsetX, offsetY, boxWidth, boxHeight;
 
@@ -134,9 +135,11 @@ public class Player {
             return true;
         }
 
-        // Check collision with enemy
-        if (enemy.checkCollision(testX + offsetX, testY + offsetY, boxWidth, boxHeight)) {
-            return true;
+        // Check collision with all enemies in the list
+        for (Enemy enemy : enemies) {
+            if (enemy.checkCollision(testX + offsetX, testY + offsetY, boxWidth, boxHeight)) {
+                return true;
+            }
         }
 
         return false;
@@ -148,6 +151,11 @@ public class Player {
         // Draw collision box for debugging
         drawCollisionBox();
     }
+    public void setPosition(float newX, float newY) {
+        this.x = newX;
+        this.y = newY;
+    }
+
 
     private void drawCollisionBox() {
         float offsetX, offsetY, boxWidth, boxHeight;
@@ -175,13 +183,13 @@ public class Player {
     }
 
     public void keyPressed(char key) {
-        if (key == 'w') {
+        if (key == 'w' && !movingRight && !movingLeft && !movingDown) {
             movingUp = true;
-        } else if (key == 's') {
+        } else if (key == 's' && !movingRight && !movingLeft && !movingUp) {
             movingDown = true;
-        } else if (key == 'a') {
+        } else if (key == 'a' && !movingUp && !movingDown && !movingRight) {
             movingLeft = true;
-        } else if (key == 'd') {
+        } else if (key == 'd' && !movingUp && !movingDown && !movingLeft) {
             movingRight = true;
         }
     }

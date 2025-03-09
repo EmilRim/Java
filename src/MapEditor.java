@@ -1,7 +1,5 @@
 import processing.core.PApplet;
 import processing.core.PImage;
-import processing.data.JSONArray;
-import processing.data.JSONObject;
 
 public class MapEditor {
     private PApplet p;
@@ -66,10 +64,25 @@ public class MapEditor {
         this.editMapWidth = map[0].length;
         this.editMapHeight = map.length;
     }
+    // Add this method to your MapEditor class
+    public void updateFromGameMap(GameMap gameMap) {
+        // Update internal map copies
+        for (int i = 0; i < gameMap.getMapHeight(); i++) {
+            for (int j = 0; j < gameMap.getMapWidth(); j++) {
+                this.map[i][j] = gameMap.getBackgroundTile(i, j);
+                this.foregroundMap[i][j] = gameMap.getForegroundTile(i, j);
+            }
+        }
+
+        // Reset the camera position
+        this.editorCameraX = 0;
+        this.editorCameraY = 0;
+    }
 
     // Draw method to match MyGame's call
     public void draw() {
         handleEditorScroll();
+        handleMousePress();
         drawEditorMap();
         drawEditorPanel();
     }
@@ -213,18 +226,7 @@ public class MapEditor {
 
     // Extracted panel click handling for clarity
     private void handlePanelClicks() {
-        // Layer selection
-        if (p.mouseY >= 50 && p.mouseY <= 80) {
-            if (p.mouseX >= p.width - editorPanelWidth + 20 && p.mouseX <= p.width - editorPanelWidth + 90) {
-                // Background button
-                editingForeground = false;
-            } else if (p.mouseX >= p.width - editorPanelWidth + 110 && p.mouseX <= p.width - editorPanelWidth + 180) {
-                // Foreground button
-                editingForeground = true;
-            }
-        }
-
-        // Tile selection
+        // Only handle tile selection
         int tilesPerRow = 4;
         int tileDisplaySize = 40;
         int startX = p.width - editorPanelWidth + 10;
@@ -243,28 +245,6 @@ public class MapEditor {
                 break;
             }
         }
-
-        // Control buttons
-        int controlsY = startY + (images.length / tilesPerRow + 1) * (tileDisplaySize + 10);
-        int toggleY = controlsY + 30;
-
-        // Grid toggle
-        if (p.mouseX >= p.width - editorPanelWidth + 20 && p.mouseX <= p.width - editorPanelWidth + 170 &&
-                p.mouseY >= toggleY && p.mouseY <= toggleY + 30) {
-            showGrid = !showGrid;
-        }
-
-        // Collision view toggle
-        if (p.mouseX >= p.width - editorPanelWidth + 20 && p.mouseX <= p.width - editorPanelWidth + 170 &&
-                p.mouseY >= toggleY + 40 && p.mouseY <= toggleY + 70) {
-            showCollisions = !showCollisions;
-        }
-
-        // Save button
-        if (p.mouseX >= p.width - editorPanelWidth + 20 && p.mouseX <= p.width - editorPanelWidth + 170 &&
-                p.mouseY >= toggleY + 80 && p.mouseY <= toggleY + 110) {
-            saveMapToJSON("map.json");
-        }
     }
 
     // Key pressed method
@@ -281,8 +261,8 @@ public class MapEditor {
         else if (p.key == 'f' || p.key == 'F') {
             editingForeground = !editingForeground;
         }
-        // Save map
-        else if (p.key == 's' || p.key == 'S') {
+        // Save map (changed from 'S' to 'M')
+        else if (p.key == 'm' || p.key == 'M') {
             saveMapToJSON("map.json");
         }
     }
@@ -325,17 +305,13 @@ public class MapEditor {
         p.textSize(18);
         p.text("TILE EDITOR", p.width - editorPanelWidth/2, 30);
 
-        // Draw layer selector
-        p.fill(editingForeground ? 100 : 200);
-        p.rect(p.width - editorPanelWidth + 20, 50, 70, 30);
-        p.fill(editingForeground ? 200 : 100);
-        p.rect(p.width - editorPanelWidth + 110, 50, 70, 30);
-
-        p.fill(0);
+        // Show current editing layer without buttons
+        p.fill(255);
+        p.textAlign(PApplet.CENTER);
+        p.textSize(16);
+        p.text("Current Layer: " + (editingForeground ? "Foreground" : "Background"), p.width - editorPanelWidth/2, 65);
         p.textSize(14);
-        p.textAlign(PApplet.CENTER, PApplet.CENTER);
-        p.text("Background", p.width - editorPanelWidth + 55, 65);
-        p.text("Foreground", p.width - editorPanelWidth + 145, 65);
+        p.text("Press [F] to toggle layers", p.width - editorPanelWidth/2, 85);
 
         // Draw tileset title
         p.fill(255);
@@ -343,7 +319,7 @@ public class MapEditor {
         p.textSize(16);
         p.text("Tileset", p.width - editorPanelWidth/2, 110);
 
-        // Draw all available tiles in a grid
+        // Draw all available tiles in a grid with enhanced highlighting
         int tilesPerRow = 4;
         int tileDisplaySize = 40;
         int startX = p.width - editorPanelWidth + 10;
@@ -358,7 +334,19 @@ public class MapEditor {
 
             // Draw tile background
             if (selectedTile == i) {
-                p.fill(255, 255, 0);  // Highlight selected tile
+                // Enhanced highlighting for selected tile
+                p.fill(255, 220, 50);  // Brighter yellow
+                p.rect(x - 3, y - 3, tileDisplaySize + 6, tileDisplaySize + 6);  // Larger highlight area
+
+                // Add a border
+                p.stroke(255);
+                p.strokeWeight(2);
+                p.noFill();
+                p.rect(x, y, tileDisplaySize, tileDisplaySize);
+                p.noStroke();
+                p.strokeWeight(1);
+
+                p.fill(80); // Darker background under the tile
             } else {
                 p.fill(100);
             }
@@ -372,45 +360,39 @@ public class MapEditor {
             p.textSize(10);
             p.textAlign(PApplet.LEFT);
             p.text(i, x + 2, y + tileDisplaySize - 2);
-
-            // If this is a collision tile, mark it
-          /*  if (contains(solidTiles, i)) {
-                p.stroke(255, 0, 0);
-                p.line(x, y, x + tileDisplaySize, y + tileDisplaySize);
-                p.line(x + tileDisplaySize, y, x, y + tileDisplaySize);
-                p.noStroke();
-            }*/
         }
 
-        // Draw controls section
-        int controlsY = startY + (images.length / tilesPerRow + 1) * (tileDisplaySize + 10);
+        // Draw controls section - text only, no buttons
+        int controlsY = startY + (images.length / tilesPerRow + 1) * (tileDisplaySize + 8);
 
         p.fill(255);
         p.textAlign(PApplet.CENTER);
         p.textSize(16);
-        p.text("Controls", p.width - editorPanelWidth/2, controlsY-25);
+        p.text("Controls", p.width - editorPanelWidth/2, controlsY);
 
-        // Draw toggle buttons
-        int toggleY = controlsY;
+        // List of controls as text only
+        p.textAlign(PApplet.LEFT);
+        p.textSize(14);
+        int textY = controlsY + 25;
+        int lineHeight = 20;
 
-        // Grid toggle
-        p.fill(showGrid ? 100 : 50);
-        p.rect(p.width - editorPanelWidth + 20, toggleY, 150, 30);
-        p.fill(255);
-        p.textAlign(PApplet.CENTER, PApplet.CENTER);
-        p.text("Toggle Grid (G)", p.width - editorPanelWidth + 95, toggleY + 15);
+        p.text("[G] Toggle Grid " + (showGrid ? "(ON)" : "(OFF)"), p.width - editorPanelWidth + 20, textY);
+        textY += lineHeight;
 
-        // Collision view toggle
-        p.fill(showCollisions ? 100 : 50);
-        p.rect(p.width - editorPanelWidth + 20, toggleY + 40, 150, 30);
-        p.fill(2);
-        p.text("Show Collisions (C)", p.width - editorPanelWidth + 95, toggleY + 55);
+        p.text("[C] Show Collisions " + (showCollisions ? "(ON)" : "(OFF)"), p.width - editorPanelWidth + 20, textY);
+        textY += lineHeight;
 
-        // Save button
-        p.fill(60, 180, 60);
-        p.rect(p.width - editorPanelWidth + 20, toggleY + 80, 150, 30);
-        p.fill(255);
-        p.text("Save Map (S)", p.width - editorPanelWidth + 95, toggleY + 95);
+        // Change save to a different key - using 'M' for Map Save
+        p.text("[M] Save Map", p.width - editorPanelWidth + 20, textY);
+        textY += lineHeight;
+
+        p.text("[W,A,S,D] Move Camera", p.width - editorPanelWidth + 20, textY);
+        textY += lineHeight;
+
+        p.text("[F] Toggle Layers", p.width - editorPanelWidth + 20, textY);
+        textY += lineHeight;
+
+        p.text("[E] Exit Editor", p.width - editorPanelWidth + 20, textY);
     }
 
     // Helper function for checking if a value is in an array
