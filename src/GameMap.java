@@ -3,6 +3,7 @@ import processing.core.PImage;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
+
 public class GameMap {
     private PApplet p;
     private PImage[] tiles;
@@ -96,6 +97,12 @@ public class GameMap {
         p.saveJSONObject(mapData, "data/" + filename);
         p.println("Map saved to " + filename);
     }
+
+    public JSONArray getEnemiesFromJSON(String filename) {
+        JSONObject json = p.loadJSONObject(filename);
+        return json.getJSONArray("enemies");
+    }
+
 
     public void drawBackgroundLayer() {
         for (int i = 0; i < backgroundLayer.length; i++) {
