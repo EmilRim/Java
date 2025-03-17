@@ -2,39 +2,42 @@ import processing.core.PApplet;
 import processing.core.PImage;
 import java.util.ArrayList;
 
+/**
+ * Player class representing the user-controlled character in the game.
+ * Handles movement, animation, collision detection, and input processing.
+ */
 public class Player {
+    // Core references
     private PApplet p;
     private PImage[] sprites;
 
     // Position and movement
-    private float x;
-    private float y;
-    private float speed;
+    private float x, y, speed;
     private boolean movingUp = false;
     private boolean movingDown = false;
     private boolean movingLeft = false;
     private boolean movingRight = false;
 
-    // Animation
-    private int tileWidth;
-    private int tileHeight;
-    private int direction = 0; // 0 = down, 1 = left, 2 = up, 3 = right
+    // Animation properties
+    private int tileWidth, tileHeight;
+    private int direction = 0;       // 0 = down, 1 = left, 2 = up, 3 = right
     private int frame = 0;
     private int animationCounter = 0;
-    private int animationSpeed = 2; // Lower value = faster animation
+    private int animationSpeed = 2;
     private int scaleFactor;
 
-    // Collision boxes
+    // Collision box properties
     private int frontBackOffsetX = 40;
     private int frontBackOffsetY = 30;
-    private int frontBackWidth;
-    private int frontBackHeight;
+    private int frontBackWidth, frontBackHeight;
 
     private int sideOffsetX = 20;
     private int sideOffsetY = 30;
-    private int sideWidth;
-    private int sideHeight;
+    private int sideWidth, sideHeight;
 
+    /**
+     * Creates a new player with the specified spritesheet and properties.
+     */
     public Player(PApplet p, PImage spritesheet, float startX, float startY, float speed,
                   int cols, int rows, int scaleFactor) {
         this.p = p;
@@ -43,7 +46,7 @@ public class Player {
         this.speed = speed;
         this.scaleFactor = scaleFactor;
 
-        // Extract sprites from spritesheet
+        // Extract sprite frames from spritesheet
         this.tileWidth = spritesheet.width / cols;
         this.tileHeight = spritesheet.height / rows;
         this.sprites = new PImage[cols * rows];
@@ -54,24 +57,31 @@ public class Player {
             }
         }
 
-        // Set collision box sizes
+        // Set collision box dimensions
         frontBackWidth = tileWidth * scaleFactor - 2 * frontBackOffsetX;
         frontBackHeight = tileHeight * scaleFactor - 2 * frontBackOffsetY;
         sideWidth = tileWidth * scaleFactor - 2 * sideOffsetX;
         sideHeight = tileHeight * scaleFactor - 2 * sideOffsetY;
     }
 
+    /**
+     * Updates the player's state for the current frame.
+     */
     public void update(GameMap map, ArrayList<Enemy> enemies) {
         updateAnimation();
         updatePosition(map, enemies);
     }
 
+    /**
+     * Updates the player's animation frame based on movement direction.
+     */
     private void updateAnimation() {
         animationCounter++;
 
         if (animationCounter >= animationSpeed) {
             animationCounter = 0;
 
+            // Update animation frame based on direction
             if (movingUp) {
                 direction = 2;
                 if (frame < 8 || frame > 11) frame = 8;
@@ -92,26 +102,31 @@ public class Player {
         }
     }
 
+    /**
+     * Updates the player's position based on movement flags and collisions.
+     */
     private void updatePosition(GameMap map, ArrayList<Enemy> enemies) {
         float newX = x;
         float newY = y;
 
+        // Calculate new position based on movement flags
         if (movingUp) newY -= speed;
         if (movingDown) newY += speed;
         if (movingLeft) newX -= speed;
         if (movingRight) newX += speed;
 
-        // Check and apply horizontal movement if valid
+        // Apply movement if no collision
         if (newX != x && !checkCollision(newX, y, map, enemies)) {
             x = newX;
         }
-
-        // Check and apply vertical movement if valid
         if (newY != y && !checkCollision(x, newY, map, enemies)) {
             y = newY;
         }
     }
 
+    /**
+     * Checks for collision with map tiles and enemies.
+     */
     private boolean checkCollision(float testX, float testY, GameMap map, ArrayList<Enemy> enemies) {
         // Select the appropriate collision box based on direction
         float offsetX, offsetY, boxWidth, boxHeight;
@@ -135,7 +150,7 @@ public class Player {
             return true;
         }
 
-        // Check collision with all enemies in the list
+        // Check collision with enemies
         for (Enemy enemy : enemies) {
             if (enemy.checkCollision(testX + offsetX, testY + offsetY, boxWidth, boxHeight)) {
                 return true;
@@ -145,18 +160,18 @@ public class Player {
         return false;
     }
 
+    /**
+     * Draws the player sprite at the current position.
+     */
     public void draw() {
         p.image(sprites[frame], x, y, tileWidth * scaleFactor, tileHeight * scaleFactor);
-
-        // Draw collision box for debugging
-        drawCollisionBox();
-    }
-    public void setPosition(float newX, float newY) {
-        this.x = newX;
-        this.y = newY;
+        // Debug: uncomment to show collision box
+        // drawCollisionBox();
     }
 
-
+    /**
+     * Draws the player's collision box for debugging purposes.
+     */
     private void drawCollisionBox() {
         float offsetX, offsetY, boxWidth, boxHeight;
 
@@ -182,6 +197,9 @@ public class Player {
         p.stroke(0);
     }
 
+    /**
+     * Handles key press events for player movement.
+     */
     public void keyPressed(char key) {
         if (key == 'w' && !movingRight && !movingLeft && !movingDown) {
             movingUp = true;
@@ -194,6 +212,9 @@ public class Player {
         }
     }
 
+    /**
+     * Handles key release events for player movement.
+     */
     public void keyReleased(char key) {
         if (key == 'w') {
             movingUp = false;
@@ -206,7 +227,12 @@ public class Player {
         }
     }
 
-    // Getters
+    // Getters and setters
+    public void setPosition(float newX, float newY) {
+        this.x = newX;
+        this.y = newY;
+    }
+
     public float getX() {
         return x;
     }
