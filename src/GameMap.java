@@ -3,34 +3,28 @@ import processing.core.PImage;
 import processing.data.JSONArray;
 import processing.data.JSONObject;
 
-
 public class GameMap {
     private PApplet p;
     private PImage[] tiles;
-
-    // Map data
     private int[][] backgroundLayer;
     private int[][] foregroundLayer;
+    private int tileWidth, tileHeight, scaleFactor;
 
-    // Tile information
-    private int tileWidth;
-    private int tileHeight;
-    private int scaleFactor;
-
-    // Collision information
+    // Tile indices that block player movement
     private int[] solidTiles = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38};
-    private int[] solidForegroundTiles = {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38};
+    private int[] solidForegroundTiles = solidTiles;
 
     public GameMap(PApplet p, PImage tileset, int cols, int rows, int scaleFactor) {
         this.p = p;
         this.scaleFactor = scaleFactor;
-
-        // Calculate tile dimensions
         this.tileWidth = tileset.width / cols;
         this.tileHeight = tileset.height / rows;
+        extractTiles(tileset, cols, rows);
+    }
 
-        // Extract tiles from tileset
-        this.tiles = new PImage[cols * rows];
+    // Extract individual tiles from tileset image
+    private void extractTiles(PImage tileset, int cols, int rows) {
+        tiles = new PImage[cols * rows];
         for (int j = 0; j < rows; j++) {
             for (int i = 0; i < cols; i++) {
                 tiles[i + j * cols] = tileset.get(i * tileWidth, j * tileHeight, tileWidth, tileHeight);
@@ -38,197 +32,127 @@ public class GameMap {
         }
     }
 
+    // Load map data from JSON file
     public void loadMapFromJSON(String filename) {
         JSONObject mapData = p.loadJSONObject(filename);
-        JSONArray tilesArray = mapData.getJSONArray("tiles");
-        JSONArray foregroundArray = mapData.getJSONArray("foreground");
-
-        int mapHeight = mapData.getInt("height");
         int mapWidth = mapData.getInt("width");
+        int mapHeight = mapData.getInt("height");
 
-        backgroundLayer = new int[mapHeight][mapWidth];
-        foregroundLayer = new int[mapHeight][mapWidth];
-
-        // Load background layer
-        for (int i = 0; i < mapHeight; i++) {
-            JSONArray row = tilesArray.getJSONArray(i);
-            for (int j = 0; j < mapWidth; j++) {
-                backgroundLayer[i][j] = row.getInt(j);
-            }
-        }
-
-        // Load foreground layer
-        for (int i = 0; i < mapHeight; i++) {
-            JSONArray row = foregroundArray.getJSONArray(i);
-            for (int j = 0; j < mapWidth; j++) {
-                foregroundLayer[i][j] = row.getInt(j);
-            }
-        }
+        backgroundLayer = parseLayer(mapData.getJSONArray("tiles"), mapWidth, mapHeight);
+        foregroundLayer = parseLayer(mapData.getJSONArray("foreground"), mapWidth, mapHeight);
     }
 
+    private int[][] parseLayer(JSONArray layerArray, int width, int height) {
+        int[][] layer = new int[height][width];
+        for (int i = 0; i < height; i++) {
+            JSONArray row = layerArray.getJSONArray(i);
+            for (int j = 0; j < width; j++) {
+                layer[i][j] = row.getInt(j);
+            }
+        }
+        return layer;
+    }
+
+    // Save map data to JSON file
     public void saveMapToJSON(String filename) {
         JSONObject mapData = new JSONObject();
-        mapData.setInt("width", backgroundLayer[0].length);
-        mapData.setInt("height", backgroundLayer.length);
+        mapData.setInt("width", getMapWidth());
+        mapData.setInt("height", getMapHeight());
+        mapData.setJSONArray("tiles", convertLayerToJSONArray(backgroundLayer));
+        mapData.setJSONArray("foreground", convertLayerToJSONArray(foregroundLayer));
 
-        // Create tiles array
-        JSONArray tilesArray = new JSONArray();
-        for (int i = 0; i < backgroundLayer.length; i++) {
-            JSONArray row = new JSONArray();
-            for (int j = 0; j < backgroundLayer[i].length; j++) {
-                row.setInt(j, backgroundLayer[i][j]);
-            }
-            tilesArray.setJSONArray(i, row);
-        }
-        mapData.setJSONArray("tiles", tilesArray);
-
-        // Create foreground array
-        JSONArray foregroundArray = new JSONArray();
-        for (int i = 0; i < foregroundLayer.length; i++) {
-            JSONArray row = new JSONArray();
-            for (int j = 0; j < foregroundLayer[i].length; j++) {
-                row.setInt(j, foregroundLayer[i][j]);
-            }
-            foregroundArray.setJSONArray(i, row);
-        }
-        mapData.setJSONArray("foreground", foregroundArray);
-
-        // Save to file
         p.saveJSONObject(mapData, "data/" + filename);
         p.println("Map saved to " + filename);
     }
 
+    private JSONArray convertLayerToJSONArray(int[][] layer) {
+        JSONArray layerArray = new JSONArray();
+        for (int[] row : layer) {
+            JSONArray rowArray = new JSONArray();
+            for (int tile : row) {
+                rowArray.append(tile);
+            }
+            layerArray.append(rowArray);
+        }
+        return layerArray;
+    }
+
     public JSONArray getEnemiesFromJSON(String filename) {
-        JSONObject json = p.loadJSONObject(filename);
-        return json.getJSONArray("enemies");
+        return p.loadJSONObject(filename).getJSONArray("enemies");
     }
 
-
-    public void drawBackgroundLayer() {
-        for (int i = 0; i < backgroundLayer.length; i++) {
-            for (int j = 0; j < backgroundLayer[i].length; j++) {
-                p.image(tiles[backgroundLayer[i][j]],
-                        j * tileWidth * scaleFactor,
-                        i * tileHeight * scaleFactor,
-                        tileWidth * scaleFactor,
-                        tileHeight * scaleFactor);
-            }
-        }
-    }
-
-    public void drawForegroundLayer() {
-        for (int i = 0; i < foregroundLayer.length; i++) {
-            for (int j = 0; j < foregroundLayer[i].length; j++) {
-                int tileIndex = foregroundLayer[i][j];
-                if (tileIndex != 0) { // Only draw non-zero foreground tiles
-                    p.image(tiles[tileIndex],
-                            j * tileWidth * scaleFactor,
-                            i * tileHeight * scaleFactor,
-                            tileWidth * scaleFactor,
-                            tileHeight * scaleFactor);
+    // Render a layer of the map
+    public void drawLayer(int[][] layer) {
+        for (int i = 0; i < layer.length; i++) {
+            for (int j = 0; j < layer[i].length; j++) {
+                int tileIndex = layer[i][j];
+                if (tileIndex != 0) {  // Skip empty tiles
+                    p.image(tiles[tileIndex], j * tileWidth * scaleFactor, i * tileHeight * scaleFactor,
+                            tileWidth * scaleFactor, tileHeight * scaleFactor);
                 }
             }
         }
     }
 
+    public void drawBackgroundLayer() { drawLayer(backgroundLayer); }
+    public void drawForegroundLayer() { drawLayer(foregroundLayer); }
+
+    // Check if an object collides with solid tiles
     public boolean checkCollision(float x, float y, float width, float height) {
-        // Get the tiles that the object's collision box intersects with
-        int startTileX = (int)(x / (tileWidth * scaleFactor));
-        int startTileY = (int)(y / (tileHeight * scaleFactor));
-        int endTileX = (int)((x + width) / (tileWidth * scaleFactor));
-        int endTileY = (int)((y + height) / (tileHeight * scaleFactor));
+        int startX = (int)(x / (tileWidth * scaleFactor));
+        int startY = (int)(y / (tileHeight * scaleFactor));
+        int endX = (int)((x + width) / (tileWidth * scaleFactor));
+        int endY = (int)((y + height) / (tileHeight * scaleFactor));
 
-        // Check if any of those tiles are solid
-        for (int tileY = startTileY; tileY <= endTileY; tileY++) {
-            for (int tileX = startTileX; tileX <= endTileX; tileX++) {
-                // Check map bounds
-                if (tileY >= 0 && tileY < backgroundLayer.length &&
-                        tileX >= 0 && tileX < backgroundLayer[0].length) {
-
-                    // Check collision with background tiles
-                    if (contains(solidTiles, backgroundLayer[tileY][tileX])) {
-                        return true; // Collision detected
-                    }
-
-                    // Check collision with foreground tiles
-                    if (contains(solidForegroundTiles, foregroundLayer[tileY][tileX])) {
-                        return true; // Collision detected
-                    }
-                }
-            }
-        }
-
-        return false; // No collision
+        return checkTileCollision(backgroundLayer, startX, startY, endX, endY, solidTiles) ||
+                checkTileCollision(foregroundLayer, startX, startY, endX, endY, solidForegroundTiles);
     }
 
-    // Helper function for checking if a value is in an array
-    private boolean contains(int[] array, int value) {
-        for (int element : array) {
-            if (element == value) {
-                return true;
+    private boolean checkTileCollision(int[][] layer, int startX, int startY, int endX, int endY, int[] solidList) {
+        for (int y = startY; y <= endY; y++) {
+            for (int x = startX; x <= endX; x++) {
+                if (y >= 0 && y < layer.length && x >= 0 && x < layer[0].length) {
+                    if (contains(solidList, layer[y][x])) {
+                        return true;
+                    }
+                }
             }
         }
         return false;
     }
 
-    // Methods for editor to modify the map
-    public void setBackgroundTile(int row, int col, int tileIndex) {
-        if (row >= 0 && row < backgroundLayer.length && col >= 0 && col < backgroundLayer[0].length) {
-            backgroundLayer[row][col] = tileIndex;
+    private boolean contains(int[] array, int value) {
+        for (int num : array) {
+            if (num == value) return true;
         }
+        return false;
+    }
+
+    // Methods to modify tiles
+    public void setBackgroundTile(int row, int col, int tileIndex) {
+        modifyTile(backgroundLayer, row, col, tileIndex);
     }
 
     public void setForegroundTile(int row, int col, int tileIndex) {
-        if (row >= 0 && row < foregroundLayer.length && col >= 0 && col < foregroundLayer[0].length) {
-            foregroundLayer[row][col] = tileIndex;
+        modifyTile(foregroundLayer, row, col, tileIndex);
+    }
+
+    private void modifyTile(int[][] layer, int row, int col, int tileIndex) {
+        if (row >= 0 && row < layer.length && col >= 0 && col < layer[0].length) {
+            layer[row][col] = tileIndex;
         }
     }
 
-    // Getters
-    public int getMapWidth() {
-        return backgroundLayer[0].length;
-    }
-
-    public int getMapHeight() {
-        return backgroundLayer.length;
-    }
-
-    public int getWidthInPixels() {
-        return backgroundLayer[0].length * tileWidth * scaleFactor;
-    }
-
-    public int getHeightInPixels() {
-        return backgroundLayer.length * tileHeight * scaleFactor;
-    }
-
-    public int getTileWidth() {
-        return tileWidth;
-    }
-
-    public int getTileHeight() {
-        return tileHeight;
-    }
-
-    public PImage[] getTiles() {
-        return tiles;
-    }
-
-    public int getTileCount() {
-        return tiles.length;
-    }
-
-    public int getBackgroundTile(int row, int col) {
-        return backgroundLayer[row][col];
-    }
-
-    public int getForegroundTile(int row, int col) {
-        return foregroundLayer[row][col];
-    }
-
-    public int[] getSolidTiles() {
-        return solidTiles;
-    }
-    public int[] getSolidForegroundTiles() {
-        return solidForegroundTiles;
-    }
+    // Getters for map properties
+    public int getMapWidth() { return backgroundLayer[0].length; }
+    public int getMapHeight() { return backgroundLayer.length; }
+    public int getWidthInPixels() { return getMapWidth() * tileWidth * scaleFactor; }
+    public int getHeightInPixels() { return getMapHeight() * tileHeight * scaleFactor; }
+    public int getTileWidth() { return tileWidth; }
+    public int getTileHeight() { return tileHeight; }
+    public int getBackgroundTile(int row, int col) { return backgroundLayer[row][col]; }
+    public int getForegroundTile(int row, int col) { return foregroundLayer[row][col]; }
+    public int[] getSolidTiles() { return solidTiles; }
+    public int[] getSolidForegroundTiles() { return solidForegroundTiles; }
+    public PImage[] getTiles() { return tiles; }
 }

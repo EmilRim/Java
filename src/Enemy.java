@@ -1,23 +1,21 @@
 import processing.core.PApplet;
 import processing.core.PImage;
 
-
+/**
+ * Enemy class for handling enemies in the game with movement, animation, and collision detection.
+ */
 public class Enemy {
     private PApplet p;
     private PImage[] sprites;
     private PImage[] deathSprites;
 
     // Position and movement
-    private float x;
-    private float y;
-    private float speed;
+    private float x, y, speed;
     private int direction = 1; // 1 = right, -1 = left
-    private int minX;
-    private int maxX;
+    private int minX, maxX;
 
     // Sprite information
-    private int tileWidth;
-    private int tileHeight;
+    private int tileWidth, tileHeight;
     private int scaleFactor;
 
     // Animation
@@ -25,16 +23,19 @@ public class Enemy {
     private int animationCounter = 0;
     private int animationSpeed = 10;
 
+    // Collision box
     private int sideOffsetX = 50;
     private int sideOffsetY = 60;
-    private int sideWidth;
-    private int sideHeight;
+    private int sideWidth, sideHeight;
 
-    // Flags for enemy state
-    private boolean isActive = true; // Is the enemy active or has it died?
-    public boolean isDying = false; // Is the enemy in the death animation phase?
-    private int deathFrame = 0; // Frame of the death animation
+    // State flags
+    private boolean isActive = true;
+    public boolean isDying = false;
+    private int deathFrame = 0;
 
+    /**
+     * Creates a new enemy with specified sprites and movement parameters.
+     */
     public Enemy(PApplet p, PImage spritesheet, PImage deathSpritesheet, float startX, float startY,
                  float speed, int cols, int rows, int minX, int maxX, int scaleFactor) {
         this.p = p;
@@ -45,7 +46,7 @@ public class Enemy {
         this.maxX = maxX;
         this.scaleFactor = scaleFactor;
 
-        // Regular enemy spritesheet (normal movement)
+        // Regular enemy spritesheet
         this.tileWidth = spritesheet.width / cols;
         this.tileHeight = spritesheet.height / rows;
         this.sprites = new PImage[cols * rows];
@@ -58,11 +59,11 @@ public class Enemy {
         }
 
         // Death animation spritesheet
-        int deathCols = 1; // Change this based on how many columns the death spritesheet has
-        int deathRows = 6; // Change this based on how many rows the death spritesheet has
+        int deathCols = 1;
+        int deathRows = 6;
         this.deathSprites = new PImage[deathCols * deathRows];
 
-        // Calculate death animation frames
+        // Extract frames for death animation
         for (int j = 0; j < deathRows; j++) {
             for (int i = 0; i < deathCols; i++) {
                 deathSprites[i + j * deathCols] = deathSpritesheet.get(i * tileWidth, j * tileHeight, tileWidth, tileHeight);
@@ -74,30 +75,34 @@ public class Enemy {
         sideHeight = tileHeight * scaleFactor - 2 * sideOffsetY;
     }
 
+    /**
+     * Draws the enemy's collision box for debugging.
+     */
     private void drawCollisionBox() {
         if (isActive) {
-            // Draw a collision box around the enemy
             float offsetX = sideOffsetX;
             float offsetY = sideOffsetY;
             float boxWidth = sideWidth;
             float boxHeight = sideHeight;
-            p.fill(255, 0, 0, 100); // Red with transparency for side view collision box
+            p.fill(255, 0, 0, 100);
             p.noStroke();
             p.rect(x + offsetX, y + offsetY, boxWidth, boxHeight);
             p.noFill();
-            p.stroke(0); // Reset stroke after drawing the box
+            p.stroke(0);
         }
     }
 
+    /**
+     * Updates the enemy's position and animation state.
+     */
     public void update() {
-        if (!isActive) return; // If the enemy is not active, don't update it
+        if (!isActive) return;
 
-        // If the enemy is dying, handle death animation
         if (isDying) {
+            // Handle death animation
             deathFrame++;
             if (deathFrame >= deathSprites.length) {
-                // End the death animation after it's done
-                isActive = false; // Deactivate the enemy
+                isActive = false;
                 return;
             }
         } else {
@@ -113,42 +118,53 @@ public class Enemy {
             animationCounter++;
             if (animationCounter >= animationSpeed) {
                 animationCounter = 0;
-                frame = (frame + 1) % sprites.length; // Cycle between frames
+                frame = (frame + 1) % sprites.length;
             }
         }
     }
+
+    /**
+     * Checks if the death animation has completed.
+     */
     public boolean isDeathAnimationComplete() {
         return isDying && deathFrame >= deathSprites.length - 1;
     }
+
+    /**
+     * Draws the enemy with the appropriate animation frame.
+     */
     public void draw() {
         if (isActive) {
             if (isDying) {
-                // Draw death animation if enemy is dying
+                // Draw death animation
                 p.image(deathSprites[deathFrame], x, y, tileWidth * scaleFactor, tileHeight * scaleFactor);
             } else {
-                // Draw regular enemy animation
+                // Draw regular animation
                 p.image(sprites[frame], x, y, tileWidth * scaleFactor, tileHeight * scaleFactor);
             }
 
-            // Draw collision box for debugging (you can comment this out in the final game version)
-            drawCollisionBox();
+            // Debug: uncomment to show collision box
+            // drawCollisionBox();
         }
     }
 
+    /**
+     * Checks for collision with the player and starts death animation if collision occurs.
+     */
     public boolean checkCollision(float playerX, float playerY, float playerWidth, float playerHeight) {
         if (isActive && !isDying) {
-            // Checking collision with the adjusted size and offset
-            if (playerX + playerWidth > x + sideOffsetX && playerX < x + sideWidth + sideOffsetX &&
-                    playerY + playerHeight > y + sideOffsetY && playerY < y + sideHeight + sideOffsetY) {
+            if (playerX + playerWidth > x + sideOffsetX &&
+                    playerX < x + sideWidth + sideOffsetX &&
+                    playerY + playerHeight > y + sideOffsetY &&
+                    playerY < y + sideHeight + sideOffsetY) {
                 // Collision detected, start death animation
                 isDying = true;
-                deathFrame = 0; // Reset death frame
-                return true; // Return true as collision occurred
+                deathFrame = 0;
+                return true;
             }
         }
         return false;
     }
-
 
     // Getters
     public float getX() {
